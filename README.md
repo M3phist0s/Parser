@@ -1,5 +1,5 @@
 # Parser
-Word Parser for keywords and Extract Paragraph
+Word VBA Parser for keywords and Extract Paragraph
 
 Please note that this script will only work in Word and not in Excel.
 
