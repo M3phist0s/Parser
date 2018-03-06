@@ -1,0 +1,60 @@
+Option Explicit
+
+Sub Wait(n As Long)
+Dim t As Date
+t = Now
+    Do
+        DoEvents
+    Loop Until Now >= DateAdd("s", n, t)
+End Sub
+
+Sub FindWordCopyParagraph()
+    Dim appExcel As Object
+    Dim objSheet As Object
+    Dim DOCTBA As Object
+    Dim docRef As Object
+    Dim TBAdoc As String
+    Dim aRange As Range
+    Dim intRowCount As Integer
+    Dim wrdRef As Object
+    intRowCount = 1
+    
+    TBAdoc = "D:\Users\Mephistos\Desktop\Document_You_Want_To_Parse.docx"       	              	                                 ' Path to your document to be analyzed
+    Set DOCTBA = Documents.Open(TBAdoc)
+    Dim sCheckDoc As String
+    sCheckDoc = "D:\Users\Mephistos\Desktop\checklist.docx"                                                                              ' Path to Keywords checklist
+    Set docRef = Documents.Open(sCheckDoc)                                                                                               ' Open Checklist - You need to create the document before
+    For Each wrdRef In docRef.Words                                                                                                      ' Loop in the checklist
+        Set aRange = DOCTBA.Range                                                                                                        ' Definition of the Range for each new keyword
+        With aRange.Find                                                                                                                 ' Start of the loop in the range
+            If Len(wrdRef.Text) > 3 Then                                                                                                 ' Empty character error catch
+                Do
+                    .Text = wrdRef.Text                                                                                                  ' The word I am looking for, from the checklist
+                    .Execute
+                    If .Found Then
+                        If objSheet Is Nothing Then
+                                Set appExcel = CreateObject("Excel.Application")                                                         ' Define the application
+                                Set objSheet = appExcel.Workbooks.Open("D:\Users\Mephistos\Desktop\ParserResults.xlsx").Sheets("Sheet1") ' Change the file path to match the destination of your ParserResults.xls - You need to create the document before 
+                                intRowCount = 1                                                                                          ' Initialize row to 1
+                            End If
+                        aRange.Expand Unit:=wdParagraph                                                                                  ' Select the paragraph where the word has been found
+                        aRange.Copy                                                                                                      ' Copy it
+                        aRange.Collapse wdCollapseEnd                                                                                    ' Close found word search and goes to next finding
+                        objSheet.Paste Destination:=objSheet.Range("A" & intRowCount)                                                    ' Paste the Data in the right row and the column A
+                        Application.CommandBars("Task Pane").Visible = False                                                             ' Empty Clipboard cache
+                        objSheet.Range("E" & intRowCount).Value = wrdRef                                                                 ' Add the keyword from the checklist in the 2nd column
+                        intRowCount = intRowCount + 1                                                                                    ' Increment row
+                        Call Wait(0.1)                                                                                                   ' Wait for 0.1 sec to avoid some overflow (Haven't really dug into it) but it generates a 1004 error without
+                    End If
+                Loop While .Found
+            End If
+        End With
+    Next wrdRef
+    If Not objSheet Is Nothing Then                                                                                                      ' Excel closing
+        appExcel.Workbooks(1).Close True
+        appExcel.Quit
+        Set objSheet = Nothing
+        Set appExcel = Nothing
+    End If
+    Set aRange = Nothing
+End Sub
